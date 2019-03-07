@@ -34,16 +34,13 @@ class NullDriver extends EventEmitter {
 
     console.log(this.universe.slice(1));
 
-    this.emit('update', this.universe.slice(1));
+    this.emit('update', u);
   }
 
   updateAll(v) {
-    // why do index starts at 1 if its `updateAll` (maybe because we have 513)
     for (let i = 1; i <= 512; i++) {
       this.universe[i] = v;
     }
-
-    this.emit('update', this.universe.slice(1));
   }
 
   get(c) {
