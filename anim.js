@@ -1,13 +1,14 @@
 const ease = require('./easing.js').ease;
-const resolution = 1;
+// const resolution = 1;
 
 class Anim {
-  constructor() {
+  constructor(resolution = 0.2) {
     this.fxStack = [];
     this.interval = null;
+    this.resolution = resolution;
   }
 
-  add(to, duration = resolution, options = {}) {
+  add(to, duration = this.resolution, options = {}) {
     options.easing = options.easing || 'linear';
 
     this.fxStack.push({ 'to': to, 'duration': duration, 'options': options });
@@ -23,12 +24,14 @@ class Anim {
     if (this.interval) {
       clearInterval(this.interval);
     }
+
     this.fxStack = [];
   }
 
   run(universe, onFinish) {
     let config = {};
-    let ticks = 0;
+    // let ticks = 0;
+    let startTime = 0;
     let duration = 0;
     let animationStep;
     let iid = null;
@@ -37,15 +40,18 @@ class Anim {
 
     const aniSetup = () => {
       animationStep = stack.shift();
-      ticks = 0;
+      // ticks = 0;
+      startTime = performance.now();
 
       /**
        * Set duration and force to be at least one
        * @type Number
        */
-      duration = !isNaN(animationStep.duration) && animationStep.duration < 1 ? 1 : animationStep.duration;
+      duration = !isNaN(animationStep.duration) && animationStep.duration < this.resolution ?
+        this.resolution : animationStep.duration;
 
       config = {};
+
       for (const k in animationStep.to) {
         config[k] = {
           'start': universe.get(k),
@@ -54,23 +60,30 @@ class Anim {
         };
       }
     };
+
     const aniStep = () => {
       const newValues = {};
+      const now = performance.now();
+      const dt = startTime - now;
 
       for (const k in config) {
         const entry = config[k];
         const easing = ease[entry.options.easing];
+        const { start, end } = entry;
+        const k = easing(Math.min(dt, duration), 0, 1, duration);
 
-        newValues[k] = Math.round(entry.start + easing(ticks, 0, 1, duration) * (entry.end - entry.start));
+        newValues[k] = Math.round(start + k * (end - start));
       }
 
-      ticks = ticks + resolution;
+      // ticks = ticks + resolution;
       universe.update(newValues);
-      if (ticks > duration) {
+
+      if (dt > duration) {
         if (stack.length > 0) {
           aniSetup();
         } else {
           clearInterval(iid);
+
           if (onFinish) {
             onFinish();
           }
@@ -79,7 +92,8 @@ class Anim {
     };
 
     aniSetup();
-    iid = this.interval = setInterval(aniStep, resolution);
+
+    iid = this.interval = setInterval(aniStep, this.esolution * 1000);
 
     return this;
   }
