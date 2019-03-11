@@ -1,8 +1,7 @@
 const ease = require('./easing.js').ease;
-// const resolution = 1;
 
 class Anim {
-  constructor(resolution = 0.2) {
+  constructor(resolution = 20) {
     this.fxStack = [];
     this.interval = null;
     this.resolution = resolution;
@@ -30,7 +29,6 @@ class Anim {
 
   run(universe, onFinish) {
     let config = {};
-    // let ticks = 0;
     let startTime = 0;
     let duration = 0;
     let animationStep;
@@ -38,9 +36,10 @@ class Anim {
 
     const stack = [ ...this.fxStack ];
 
-    const aniSetup = () => {
+    const animSetup = () => {
       animationStep = stack.shift();
-      // ticks = 0;
+      // don't believe setInterval will be accurate
+      // (most importantly with a resolution of 1ms...)
       startTime = performance.now();
 
       /**
@@ -61,26 +60,26 @@ class Anim {
       }
     };
 
-    const aniStep = () => {
+    const animStep = () => {
       const newValues = {};
       const now = performance.now();
-      const dt = startTime - now;
+      const dt = now - startTime;
 
       for (const k in config) {
         const entry = config[k];
         const easing = ease[entry.options.easing];
         const { start, end } = entry;
-        const k = easing(Math.min(dt, duration), 0, 1, duration);
 
-        newValues[k] = Math.round(start + k * (end - start));
+        const factor = easing(Math.min(dt, duration), 0, 1, duration);
+
+        newValues[k] = Math.round(start + factor * (end - start));
       }
 
-      // ticks = ticks + resolution;
       universe.update(newValues);
 
       if (dt > duration) {
         if (stack.length > 0) {
-          aniSetup();
+          animSetup();
         } else {
           clearInterval(iid);
 
@@ -91,9 +90,9 @@ class Anim {
       }
     };
 
-    aniSetup();
+    animSetup();
 
-    iid = this.interval = setInterval(aniStep, this.esolution * 1000);
+    iid = this.interval = setInterval(animStep, this.esolution);
 
     return this;
   }

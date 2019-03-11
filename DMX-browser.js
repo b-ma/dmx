@@ -18,6 +18,7 @@ class DMX extends EventEmitter {
     this.animation = require('./anim');
 
     this.registerDriver('null', require('./drivers/null'));
+    this.registerDriver('event', require('./drivers/event'));
   }
 
   registerDriver(name, module) {
