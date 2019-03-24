@@ -1,5 +1,16 @@
 const ease = require('./easing.js').ease;
 
+const getTime = (function() {
+  if (process.browser) {
+    return () => performance.now();
+  } else {
+    return () => {
+      const time = process.hrtime();
+      return time[0] * 1e3 + time[1] * 1e-6;
+    }
+  }
+}());
+
 class Anim {
   constructor(resolution = 20) {
     this.fxStack = [];
@@ -40,14 +51,14 @@ class Anim {
       animationStep = stack.shift();
       // don't believe setInterval will be accurate
       // (most importantly with a resolution of 1ms...)
-      startTime = performance.now();
+      startTime = getTime();
 
       /**
        * Set duration and force to be at least one
        * @type Number
        */
-      duration = !isNaN(animationStep.duration) && animationStep.duration < this.resolution ?
-        this.resolution : animationStep.duration;
+      duration = !isNaN(animationStep.duration) && animationStep.duration > this.resolution ?
+        animationStep.duration : this.resolution;
 
       config = {};
 
@@ -62,7 +73,7 @@ class Anim {
 
     const animStep = () => {
       const newValues = {};
-      const now = performance.now();
+      const now = getTime();
       const dt = now - startTime;
 
       for (const k in config) {
@@ -92,7 +103,7 @@ class Anim {
 
     animSetup();
 
-    iid = this.interval = setInterval(animStep, this.esolution);
+    iid = this.interval = setInterval(animStep, this.resolution);
 
     return this;
   }
